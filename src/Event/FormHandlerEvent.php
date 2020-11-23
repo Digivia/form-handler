@@ -16,17 +16,17 @@ use Symfony\Component\HttpFoundation\Request;
  */
 final class FormHandlerEvent
 {
-    private Request       $request;
+    private ?Request       $request;
     private FormInterface $form;
     /** @var mixed */
     private $data;
 
     /**
      * FormHandlerEvent constructor.
-     * @param Request $request
+     * @param Request|null $request
      * @param FormInterface $form
      */
-    public function __construct(Request $request, FormInterface $form)
+    public function __construct(FormInterface $form, Request $request = null)
     {
         $this->request = $request;
         $this->form    = $form;

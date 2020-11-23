@@ -7,6 +7,7 @@ namespace Digivia\FormHandler\Handler;
 
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Form\FormFactoryInterface;
+use Symfony\Component\Form\FormInterface;
 use Symfony\Component\Form\FormView;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -20,4 +21,6 @@ interface HandlerInterface
     public function setEventDispatcher(EventDispatcher $eventDispatcher): void;
     public function handle(Request $request, $data = null, array $options = []): bool;
     public function createView(): FormView;
+    public function getFormClassName(): string;
+    public function getForm(): ?FormInterface;
 }

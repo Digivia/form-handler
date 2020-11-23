@@ -10,9 +10,9 @@ namespace Digivia\FormHandler\Handler;
 use Digivia\FormHandler\Event\FormHandlerEvent;
 use Digivia\FormHandler\Event\FormHandlerEvents;
 use Digivia\FormHandler\Exception\FormTypeNotFoundException;
-use ReflectionException;
-use ReflectionProperty;
+use ReflectionClass;
 use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\Form\FormView;
@@ -24,17 +24,24 @@ use Symfony\Component\HttpFoundation\Request;
  */
 abstract class AbstractHandler implements HandlerInterface
 {
-    protected static string $formClassName;
+//    protected static string $formClassName;
 
     private FormFactoryInterface $formFactory;
     private FormInterface $form;
     private EventDispatcher $eventDispatcher;
 
     /**
+     * Process a treatment if form is valid
     * @param mixed|null $data
     * @param array $options
     */
     abstract protected function process($data, array $options): void;
+
+    /**
+     * Provide a correct Symfony FormType in Handler
+     * @return string
+     */
+    abstract protected function provideFormTypeClassName(): string;
 
     public function setFormFactory(FormFactoryInterface $formFactory): void
     {
@@ -47,26 +54,88 @@ abstract class AbstractHandler implements HandlerInterface
     }
 
     /**
-     * @param Request $request
+     * @return string
+     * @throws FormTypeNotFoundException
+     */
+    public function getFormClassName(): string
+    {
+        $formType = $this->provideFormTypeClassName();
+        try {
+            $r = new ReflectionClass($formType);
+        } catch (\ReflectionException $e) {
+            throw new FormTypeNotFoundException(
+                sprintf(
+                    "Non existing Form Type defined : « %s ». 
+                    Have you provide correct value in « provideFormTypeClassName » method of your handler ?",
+                    $formType
+                )
+            );
+        }
+        if (!$r->getParentClass()->name === AbstractType::class) {
+            throw new FormTypeNotFoundException(
+                sprintf(
+                    "Symfony form type does not exists. Have your extends %s from AbstractType ?",
+                    $formType
+                )
+            );
+        }
+
+        return $formType;
+    }
+
+    /**
+     * @param $data
+     * @param array $options
+     * @throws FormTypeNotFoundException
+     */
+    public function createForm($data, array $options = [])
+    {
+        // Create form and handle request
+        $this->setForm(
+            $this->formFactory->create(
+                $this->getFormClassName(),
+                $data,
+                $options
+            )
+        );
+    }
+
+    /**
+     * @param FormInterface $form
+     */
+    public function setForm(FormInterface $form)
+    {
+        $this->form = $form;
+    }
+
+    /**
+     * @return FormInterface
+     */
+    public function getForm(): ?FormInterface
+    {
+        return $this->form;
+    }
+
+    /**
+     * @param Request|null $request
      * @param mixed $data The initial data
      * @param array $options Symfony Form options
      * @return bool
      * @throws FormTypeNotFoundException
      */
-    public function handle(Request $request, $data = null, array $options = []): bool
+    public function handle(Request $request = null, $data = null, array $options = []): bool
     {
         // Create form and handle request
-        $this->form = $this->formFactory->create(
-            static::getFormClassName(),
-            $data,
-            $options
-        )->handleRequest($request);
+        $this->createForm($data, $options);
+        $this->setForm(
+            $this->getForm()->handleRequest($request)
+        );
 
         // Create specific form event
-        $formEvent = new FormHandlerEvent($request, $this->form);
-        if ($this->form->isSubmitted() && $this->form->isValid()) {
+        $formEvent = new FormHandlerEvent($this->getForm(), $request);
+        if ($this->getForm()->isSubmitted() && $this->getForm()->isValid()) {
             // Get Form data
-            $data = $this->form->getData();
+            $data = $this->getForm()->getData();
             // If this event is listened, it let you update data before process
             if ($this->eventDispatcher->hasListeners(FormHandlerEvents::EVENT_FORM_PROCESS)) {
                 $this->eventDispatcher->dispatch($formEvent, FormHandlerEvents::EVENT_FORM_PROCESS);
@@ -86,29 +155,5 @@ abstract class AbstractHandler implements HandlerInterface
     public function createView(): FormView
     {
         return $this->form->createView();
-    }
-
-    /**
-     * @return string
-     * @throws FormTypeNotFoundException
-     */
-    private static function getFormClassName(): string
-    {
-        try {
-            $class = static::class;
-            $r = new ReflectionProperty($class, 'formClassName');
-        } catch (ReflectionException $e) {
-            throw new FormTypeNotFoundException(sprintf("No form type defined. Have you set value on your handler %s::%s ?", $class, '$formClassName'));
-        }
-
-        $formName = $class === $r->class ? static::$formClassName : null;
-
-        if (null === $formName) {
-            throw new FormTypeNotFoundException("No form type defined. Have you provide it in the setForm method of your handler ?");
-        }
-        if (!class_exists($formName)) {
-            throw new FormTypeNotFoundException(sprintf("Symfony form type '%s' does not exists", $formName));
-        }
-        return $formName;
     }
 }
