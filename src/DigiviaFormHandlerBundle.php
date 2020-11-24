@@ -13,6 +13,8 @@ use Symfony\Component\HttpKernel\Bundle\Bundle;
 
 /**
  * Class DigiviaFormHandlerBundle
+ * @package Digivia\FormHandler
+ * @codeCoverageIgnore
  */
 class DigiviaFormHandlerBundle extends Bundle
 {
