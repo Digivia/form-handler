@@ -79,7 +79,7 @@ services:
     App\Handler\:
         resource: '../src/Handler'
         tags:
-            - { name: digivia.form_handler }
+            - { name: digivia.handler }
 ```
 
 Usage
