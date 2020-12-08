@@ -23,7 +23,7 @@
         "ext-intl": "*"
     },
     "autoload": {
-        "psr-4": { "Digivia\\FormHandler": "src/" }
+        "psr-4": { "Digivia\\FormHandler\\": "src/" }
     },
     "autoload-dev": {
         "psr-4": {
