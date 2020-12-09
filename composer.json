@@ -30,7 +30,6 @@
             "Digivia\\FormHandler\\Tests\\": "tests/"
         }
     },
-    "target-dir": "digivia/form-handler",
     "require-dev": {
         "symfony/phpunit-bridge": "^4.0|^5.0"
     }
