@@ -9,12 +9,13 @@ namespace Digivia\FormHandler\Event;
 
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Contracts\EventDispatcher\Event;
 
 /**
  * Class FormHandlerEvent
  * @package Digivia\FormHandler\Event
  */
-final class FormHandlerEvent
+final class FormHandlerEvent extends Event
 {
     private ?Request       $request;
     private FormInterface $form;
