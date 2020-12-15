@@ -3,16 +3,18 @@
  * @author Eric BATARSON <eric.batarson@digivia.fr>
  */
 
-namespace Digivia\Tests\HandlerFactory;
+namespace Digivia\FormHandler\Tests\HandlerFactory;
 
 use Digivia\FormHandler\Event\FormHandlerEvent;
 use Digivia\FormHandler\Event\FormHandlerEvents;
+use Digivia\FormHandler\Exception\FormNotDefinedException;
 use Digivia\FormHandler\Exception\FormTypeNotFoundException;
 use Digivia\FormHandler\Handler\AbstractHandler;
 use Digivia\FormHandler\Handler\HandlerInterface;
-use Digivia\Tests\HandlerFactory\TestSet\Form\FormTestType;
-use Digivia\Tests\HandlerFactory\TestSet\Model\TestEntity;
+use Digivia\FormHandler\Tests\HandlerFactory\TestSet\Form\FormTestType;
+use Digivia\FormHandler\Tests\HandlerFactory\TestSet\Model\TestEntity;
 use PHPUnit\Framework\TestCase;
+use stdClass;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\HttpFoundation\HttpFoundationExtension;
@@ -65,7 +67,7 @@ class FormHandlerTest extends TestCase
 
     public function testFormClassNameFailNonFormType()
     {
-        $mockedFormClass = get_class($this->createMock(\stdClass::class));
+        $mockedFormClass = get_class($this->createMock(stdClass::class));
         $this->handler
             ->method('provideFormTypeClassName')
             ->willReturn($mockedFormClass);
@@ -107,7 +109,7 @@ class FormHandlerTest extends TestCase
     {
         $this->createForm();
 
-        // Send a name with lenght < 3 chars (validation should fail)
+        // Send a name with length < 3 chars (validation should fail)
         $request = Request::create('/', Request::METHOD_POST, [
             'form_test' => ["name" => 'ab']
         ]);
@@ -116,8 +118,11 @@ class FormHandlerTest extends TestCase
         $this->assertEquals(false, $this->handler->handle($request));
     }
 
-    public function testFromView()
+    public function testFormView()
     {
+        $this->expectException(FormNotDefinedException::class);
+        $this->handler->createView();
+
         $this->createForm();
         $this->assertInstanceOf(FormView::class, $this->handler->createView());
     }

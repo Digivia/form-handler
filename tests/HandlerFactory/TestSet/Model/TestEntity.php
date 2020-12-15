@@ -3,7 +3,7 @@
  * @author Eric BATARSON <eric.batarson@digivia.fr>
  */
 
-namespace Digivia\Tests\HandlerFactory\TestSet\Model;
+namespace Digivia\FormHandler\Tests\HandlerFactory\TestSet\Model;
 
 /**
  * Class TestEntity

@@ -1,4 +1,3 @@
 services:
   Digivia\FormHandler\HandlerFactory\HandlerFactory: ~
-
   Digivia\FormHandler\HandlerFactory\HandlerFactoryInterface: '@Digivia\FormHandler\HandlerFactory\HandlerFactory'

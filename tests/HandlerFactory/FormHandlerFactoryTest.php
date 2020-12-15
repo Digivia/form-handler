@@ -3,7 +3,7 @@
  * @author Eric BATARSON <eric.batarson@digivia.fr>
  */
 
-namespace Digivia\Tests\HandlerFactory;
+namespace Digivia\FormHandler\Tests\HandlerFactory;
 
 use Digivia\FormHandler\Exception\HandlerNotFoundException;
 use Digivia\FormHandler\Handler\AbstractHandler;

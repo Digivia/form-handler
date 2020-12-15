@@ -3,9 +3,9 @@
  * @author Eric BATARSON <eric.batarson@digivia.fr>
  */
 
-namespace Digivia\Tests\HandlerFactory\TestSet\Form;
+namespace Digivia\FormHandler\Tests\HandlerFactory\TestSet\Form;
 
-use Digivia\Tests\HandlerFactory\TestSet\Model\TestEntity;
+use Digivia\FormHandler\Tests\HandlerFactory\TestSet\Model\TestEntity;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;

@@ -9,8 +9,10 @@ namespace Digivia\FormHandler\Handler;
 
 use Digivia\FormHandler\Event\FormHandlerEvent;
 use Digivia\FormHandler\Event\FormHandlerEvents;
+use Digivia\FormHandler\Exception\FormNotDefinedException;
 use Digivia\FormHandler\Exception\FormTypeNotFoundException;
 use ReflectionClass;
+use ReflectionException;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormFactoryInterface;
@@ -27,7 +29,7 @@ abstract class AbstractHandler implements HandlerInterface
 //    protected static string $formClassName;
 
     private FormFactoryInterface $formFactory;
-    private FormInterface $form;
+    private ?FormInterface $form = null;
     private EventDispatcher $eventDispatcher;
 
     /**
@@ -62,7 +64,7 @@ abstract class AbstractHandler implements HandlerInterface
         $formType = $this->provideFormTypeClassName();
         try {
             $r = new ReflectionClass($formType);
-        } catch (\ReflectionException $e) {
+        } catch (ReflectionException $e) {
             throw new FormTypeNotFoundException(
                 sprintf(
                     "Non existing Form Type defined : « %s ». 
@@ -152,8 +154,15 @@ abstract class AbstractHandler implements HandlerInterface
         return false;
     }
 
+    /**
+     * @return FormView
+     * @throws FormNotDefinedException
+     */
     public function createView(): FormView
     {
+        if (null === $this->form) {
+            throw new FormNotDefinedException("You have to init form with « createForm » method");
+        }
         return $this->form->createView();
     }
 }
