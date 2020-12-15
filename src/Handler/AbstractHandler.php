@@ -88,9 +88,10 @@ abstract class AbstractHandler implements HandlerInterface
     /**
      * @param $data
      * @param array $options
+     * @return AbstractHandler
      * @throws FormTypeNotFoundException
      */
-    public function createForm($data, array $options = [])
+    public function createForm($data, array $options = []): self
     {
         // Create form and handle request
         $this->setForm(
@@ -100,6 +101,7 @@ abstract class AbstractHandler implements HandlerInterface
                 $options
             )
         );
+        return $this;
     }
 
     /**
@@ -128,7 +130,9 @@ abstract class AbstractHandler implements HandlerInterface
     public function handle(Request $request = null, $data = null, array $options = []): bool
     {
         // Create form and handle request
-        $this->createForm($data, $options);
+        if (null === $this->form) {
+            $this->createForm($data, $options);
+        }
         $this->setForm(
             $this->getForm()->handleRequest($request)
         );
