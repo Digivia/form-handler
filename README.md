@@ -130,6 +130,27 @@ public function create(HandlerFactoryInterface $factory, Request $request) : Res
 
 As you can see, this Controller just get request and send a response...
 
+You can give to your form some options and to your handler "process" method extra parameters :
+```php
+
+// Form options is third paramater
+if ($handler->handle($request, $entity, ['validation_groups' => false])) {
+    ... stuff code
+}
+// will be sent to $options in FormType :
+FormFactory::create(string $type = 'Symfony\Component\Form\Extension\Core\Type\FormType', $data = null, array $options = [])
+
+
+// Process extra parameters is fourth parameter
+if ($handler->handle($request, $entity, [], ['edit_mode' => true])) {
+    ... stuff code
+}
+// will be sent to $options in this method : 
+protected function process($data, array $options): void
+
+```
+
+
 Events
 ------
 

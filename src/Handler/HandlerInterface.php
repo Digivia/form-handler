@@ -20,7 +20,7 @@ interface HandlerInterface
     public function setFormFactory(FormFactoryInterface $formFactory): void;
     public function setEventDispatcher(EventDispatcher $eventDispatcher): void;
     public function createForm(Request $request, $data = null, array $options = []): self;
-    public function handle(Request $request, $data = null, array $options = []): bool;
+    public function handle(Request $request, $data = null, array $formOptions = [], array $extraParams = []): bool;
     public function createView(): FormView;
     public function getFormClassName(): string;
     public function getForm(): ?FormInterface;

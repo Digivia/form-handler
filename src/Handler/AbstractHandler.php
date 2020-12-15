@@ -126,15 +126,16 @@ abstract class AbstractHandler implements HandlerInterface
     /**
      * @param Request|null $request
      * @param mixed $data The initial data
-     * @param array $options Symfony Form options
+     * @param array $formOptions Symfony Form options
+     * @param array $extraParams Extra options given to handler process method
      * @return bool
      * @throws FormTypeNotFoundException
      */
-    public function handle(Request $request, $data = null, array $options = []): bool
+    public function handle(Request $request, $data = null, array $formOptions = [], array $extraParams = []): bool
     {
         // Create form and handle request
         if (null === $this->form) {
-            $this->createForm($request, $data, $options);
+            $this->createForm($request, $data, $formOptions);
         }
 
         // Create specific form event
@@ -148,7 +149,7 @@ abstract class AbstractHandler implements HandlerInterface
                 $data = $formEvent->getData();
             }
             // Process (ie : push in DB, send a mail, etc
-            $this->process($data, $options);
+            $this->process($data, $extraParams);
             // This event is dispatched after process to create a post process job
             $this->eventDispatcher->dispatch($formEvent, FormHandlerEvents::EVENT_FORM_SUCCESS);
             return true;
