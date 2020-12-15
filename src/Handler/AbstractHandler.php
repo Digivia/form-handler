@@ -86,20 +86,23 @@ abstract class AbstractHandler implements HandlerInterface
     }
 
     /**
-     * @param $data
+     * @param Request $request
+     * @param null $data
      * @param array $options
      * @return AbstractHandler
      * @throws FormTypeNotFoundException
      */
-    public function createForm($data, array $options = []): self
+    public function createForm(Request $request, $data = null, array $options = []): self
     {
         // Create form and handle request
         $this->setForm(
-            $this->formFactory->create(
-                $this->getFormClassName(),
-                $data,
-                $options
-            )
+            $this->formFactory
+                ->create(
+                    $this->getFormClassName(),
+                    $data,
+                    $options
+                )
+                ->handleRequest($request)
         );
         return $this;
     }
@@ -127,15 +130,12 @@ abstract class AbstractHandler implements HandlerInterface
      * @return bool
      * @throws FormTypeNotFoundException
      */
-    public function handle(Request $request = null, $data = null, array $options = []): bool
+    public function handle(Request $request, $data = null, array $options = []): bool
     {
         // Create form and handle request
         if (null === $this->form) {
-            $this->createForm($data, $options);
+            $this->createForm($request, $data, $options);
         }
-        $this->setForm(
-            $this->getForm()->handleRequest($request)
-        );
 
         // Create specific form event
         $formEvent = new FormHandlerEvent($this->getForm(), $request);

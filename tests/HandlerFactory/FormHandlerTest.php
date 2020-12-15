@@ -91,28 +91,27 @@ class FormHandlerTest extends TestCase
 
     public function testHandleForm()
     {
-        $this->createForm();
-
         $request = Request::create('/', Request::METHOD_POST, [
             'form_test' => ["name" => 'value']
         ]);
+        $this->createForm($request);
 
         $this->eventDispatcher->addListener(FormHandlerEvents::EVENT_FORM_PROCESS, function (FormHandlerEvent $event) {
             $this->assertInstanceOf(Request::class, $event->getRequest());
             $this->assertInstanceOf(Form::class, $event->getForm());
         });
+
         $this->assertTrue(true, $this->handler->getForm()->isSubmitted());
         $this->assertEquals(true, $this->handler->handle($request));
     }
 
     public function testHandleFormFail()
     {
-        $this->createForm();
-
         // Send a name with length < 3 chars (validation should fail)
         $request = Request::create('/', Request::METHOD_POST, [
             'form_test' => ["name" => 'ab']
         ]);
+        $this->createForm($request);
 
         $this->assertTrue(true, $this->handler->getForm()->isSubmitted());
         $this->assertEquals(false, $this->handler->handle($request));
@@ -127,7 +126,7 @@ class FormHandlerTest extends TestCase
         $this->assertInstanceOf(FormView::class, $this->handler->createView());
     }
 
-    private function createForm()
+    private function createForm(Request $request = null)
     {
         // Create a form factory that supports HttFoundation Request
         $factory = Forms::createFormFactoryBuilder()
@@ -146,6 +145,7 @@ class FormHandlerTest extends TestCase
         $this->handler
             ->method('provideFormTypeClassName')
             ->willReturn(FormTestType::class);
-        $this->handler->createForm(new TestEntity());
+        $request = $request ?? Request::createFromGlobals();
+        $this->handler->createForm($request, new TestEntity());
     }
 }
