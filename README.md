@@ -113,18 +113,30 @@ class TestHandler extends AbstractHandler
 In your controller, call the form handler factory :
 
 ```php
-public function create(HandlerFactoryInterface $factory, Request $request) : Response
+public function edit(HandlerFactoryInterface $factory, Request $request, Post $post) : Response
 {
-    // Entity used in your form
-    $entity = new MyEntity();
+    // Instanciate form handler
     $handler = $factory->createHandler(TestHandler::class);
-    if ($handler->handle($request, $entity)) {
-        return $this->redirectToRoute('index');
-    }
-
-    return $this->render('default/create.html.twig', array(
-        'form' => $handler->createView(),
-    ));
+    // Give data to work with and options to form / handler
+    $handler
+        ->setData($post) // Optionally, set entity to work with to the form
+        ->setFormOptions(['validation_groups' => false]) // Optionally, add form type options if you need
+        ->setExtraParams(['form_creation' => true]); // Optionally, give extra parameter to form process method
+    // Return Response after treatment    
+    return $handler->handle(
+        $request,
+        // Callable used in case of form submitted with success
+        function ($data) {
+            return $this->redirectToRoute('post_show', ['id' => $data->getId()]);
+        },
+        // Callable used in case of non-submitted form, or submitted but not valid
+        function (FormView $formView, $data) {
+            return $this->render('conference/edit.html.twig', [
+                'form' => $formView,
+                'post' => $data
+            ]);
+        }
+    );
 }
 ```
 
@@ -133,22 +145,32 @@ As you can see, this Controller just get request and send a response...
 You can give to your form some options and to your handler "process" method extra parameters :
 ```php
 
-// Form options is third paramater
-if ($handler->handle($request, $entity, ['validation_groups' => false])) {
-    ... stuff code
-}
+// Instanciate form handler
+$handler = $factory->createHandler(TestHandler::class);
+// Give data to work with and options to form / handler
+$handler->setFormOptions(['validation_groups' => false]); // Optionally, add form type options if you need
 // will be sent to $options in FormType :
 FormFactory::create(string $type = 'Symfony\Component\Form\Extension\Core\Type\FormType', $data = null, array $options = [])
 
 
 // Process extra parameters is fourth parameter
-if ($handler->handle($request, $entity, [], ['edit_mode' => true])) {
-    ... stuff code
-}
+$handler = $factory->createHandler(TestHandler::class);
+// Give data to work with and options to form / handler
+$handler->setExtraParams(['form_creation' => true]); // Optionally, add form type options if you need
 // will be sent to $options in this method : 
 protected function process($data, array $options): void
 
 ```
+
+Note :
+------
+
+The two callables, $onSuccess and $render, must return a Response (Symfony\Component\HttpFoundation\Response).
+**The form handler will provide status code HTTP 303 if response**
+is an instance of Symfony\Component\HttpFoundation\RedirectResponse.
+If form is submitted, but not valid, **the handler will provide an HTTP 422 code to the response.**
+
+
 
 
 Events
@@ -174,3 +196,8 @@ FormHandlerEvents::EVENT_FORM_FAIL
 ```
 Event dispatched after a failed submission of the form.
 
+__________
+
+N'hésitez pas à me contacter si vous avez des questions ou des idées d'évolution. Enjoy !
+
+Eric BATARSON - [Digivia](http://www.digivia.fr)

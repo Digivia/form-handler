@@ -5,8 +5,7 @@
 
 namespace Digivia\FormHandler\Tests\HandlerFactory;
 
-use Digivia\FormHandler\Event\FormHandlerEvent;
-use Digivia\FormHandler\Event\FormHandlerEvents;
+use Digivia\FormHandler\Exception\CallbackMustReturnHttpResponseException;
 use Digivia\FormHandler\Exception\FormNotDefinedException;
 use Digivia\FormHandler\Exception\FormTypeNotFoundException;
 use Digivia\FormHandler\Handler\AbstractHandler;
@@ -19,11 +18,11 @@ use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\HttpFoundation\HttpFoundationExtension;
 use Symfony\Component\Form\Extension\Validator\ValidatorExtension;
-use Symfony\Component\Form\Form;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\Form\Forms;
 use Symfony\Component\Form\FormView;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Validator\Validation;
 
 /**
@@ -33,10 +32,6 @@ use Symfony\Component\Validator\Validation;
 class FormHandlerTest extends TestCase
 {
     private $handler;
-    /**
-     * @var EventDispatcher
-     */
-    private EventDispatcher $eventDispatcher;
 
     public function setUp(): void
     {
@@ -96,13 +91,36 @@ class FormHandlerTest extends TestCase
         ]);
         $this->createForm($request);
 
-        $this->eventDispatcher->addListener(FormHandlerEvents::EVENT_FORM_PROCESS, function (FormHandlerEvent $event) {
-            $this->assertInstanceOf(Request::class, $event->getRequest());
-            $this->assertInstanceOf(Form::class, $event->getForm());
-        });
-
         $this->assertTrue(true, $this->handler->getForm()->isSubmitted());
-        $this->assertEquals(true, $this->handler->handle($request));
+        $this->assertInstanceOf(
+            Response::class,
+            $this->handler->handle(
+                $request,
+                function () {
+                    return new Response();
+                },
+                function () {}
+            )
+        );
+    }
+
+    public function testHandleFormWithNoResponseCallbackOnSuccess()
+    {
+        $request = Request::create('/', Request::METHOD_POST, [
+            'form_test' => ["name" => 'value']
+        ]);
+        $this->createForm($request);
+
+        $this->expectException(CallbackMustReturnHttpResponseException::class);
+        $this->handler->handle(
+            $request,
+            function () {
+                return null;
+            },
+            function () {
+                return new Response();
+            }
+        );
     }
 
     public function testHandleFormFail()
@@ -114,7 +132,30 @@ class FormHandlerTest extends TestCase
         $this->createForm($request);
 
         $this->assertTrue(true, $this->handler->getForm()->isSubmitted());
-        $this->assertEquals(false, $this->handler->handle($request));
+        $this->assertInstanceOf(
+            Response::class,
+            $this->handler->handle(
+                $request,
+                function () {
+                },
+                function () {
+                    return new Response();
+                }
+            )
+        );
+    }
+
+    public function testHandleFormWithNoResponseCallbackRender()
+    {
+        // Send a name with length < 3 chars (validation should fail)
+        $request = Request::create('/', Request::METHOD_POST, [
+            'form_test' => ["name" => 'ab']
+        ]);
+        $this->createForm($request);
+
+        $this->assertTrue(true, $this->handler->getForm()->isSubmitted());
+        $this->expectException(CallbackMustReturnHttpResponseException::class);
+        $this->handler->handle($request, function () {}, function () {});
     }
 
     public function testFormView()
@@ -139,9 +180,7 @@ class FormHandlerTest extends TestCase
                         ->getFormFactory();
 
         $this->handler->setFormFactory($factory);
-
-        $this->eventDispatcher = new EventDispatcher();
-        $this->handler->setEventDispatcher($this->eventDispatcher);
+        $this->handler->setEventDispatcher(new EventDispatcher());
         $this->handler
             ->method('provideFormTypeClassName')
             ->willReturn(FormTestType::class);
