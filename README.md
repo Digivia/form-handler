@@ -1,11 +1,10 @@
 # Symfony form handler bundle
 
-In the official Symfony documentation, you can see that a form can be managed in Controller, 
-but I think that's not the best practice.
-The management form should be delegated to a dedicated manager, and the controller should be as small 
-as possible and play only his role : get a request and send a response.
+If you want to separate the logic carried out during the submission 
+of a form from the processing of the request carried out in the controller, this bundle is for you :)
 
-That's why this bundle is interesting.
+
+Thus, the controller only does its job: to receive a request and send back a response.
 
 Installation
 ============
@@ -118,16 +117,13 @@ public function edit(HandlerFactoryInterface $factory, Request $request, Post $p
     // Instanciate form handler
     $handler = $factory->createHandler(TestHandler::class);
     // Give data to work with and options to form / handler
-    $handler
-        ->setData($post) // Optionally, set entity to work with to the form
-        ->setFormOptions(['validation_groups' => false]) // Optionally, add form type options if you need
-        ->setExtraParams(['form_creation' => true]); // Optionally, give extra parameter to form process method
+    $handler->setData($post); // Optionally, set entity to work with to the form
     // Return Response after treatment    
     return $handler->handle(
         $request,
         // Callable used in case of form submitted with success
-        function ($data) {
-            return $this->redirectToRoute('post_show', ['id' => $data->getId()]);
+        function (Post $post) use ($request) {
+            return $this->redirectToRoute('post_show', ['id' => $post->getId()]);
         },
         // Callable used in case of non-submitted form, or submitted but not valid
         function (FormView $formView, $data) {
@@ -157,7 +153,7 @@ FormFactory::create(string $type = 'Symfony\Component\Form\Extension\Core\Type\F
 $handler = $factory->createHandler(TestHandler::class);
 // Give data to work with and options to form / handler
 $handler->setExtraParams(['form_creation' => true]); // Optionally, add form type options if you need
-// will be sent to $options in this method : 
+// will be sent to $options in this Form Handler method : 
 protected function process($data, array $options): void
 
 ```
@@ -168,10 +164,44 @@ Note :
 The two callables, $onSuccess and $render, must return a Response (Symfony\Component\HttpFoundation\Response).
 **The form handler will provide status code HTTP 303 if response**
 is an instance of Symfony\Component\HttpFoundation\RedirectResponse.
+
 If form is submitted, but not valid, **the handler will provide an HTTP 422 code to the response.**
 
+So you can use this bundle with Turbo like this - see : [https://github.com/symfony/ux/blob/0a6ebad4bc67f74ba3bbb52f6586085ddcd28ab1/src/Turbo/README.md#forms](https://github.com/symfony/ux/blob/0a6ebad4bc67f74ba3bbb52f6586085ddcd28ab1/src/Turbo/README.md#forms)
 
-
+```php
+public function edit(HandlerFactoryInterface $factory, Request $request, Post $post) : Response
+{
+    // Instanciate form handler
+    $handler = $factory->createHandler(TestHandler::class);
+    // Give data to work with and options to form / handler
+    $handler->setData($post); // Optionally, set entity to work with to the form
+    // Return Response after treatment    
+    return $handler->handle(
+        $request,
+        // Callable used in case of form submitted with success
+        function (Post $post) use ($request) {
+            // 🔥 If you uses Turbo 🔥
+            if (TurboStreamResponse::STREAM_FORMAT === $request->getPreferredFormat()) {
+                // If the request comes from Turbo, only send the HTML to update using a TurboStreamResponse
+                return $this->render(
+                    'post/success.stream.html.twig',
+                    ['post' => $post],
+                    new TurboStreamResponse()
+                );
+            }
+            return $this->redirectToRoute('post_show', ['id' => $post->getId()]);
+        },
+        // Callable used in case of non-submitted form, or submitted but not valid
+        function (FormView $formView, $data) {
+            return $this->render('conference/edit.html.twig', [
+                'form' => $formView,
+                'post' => $data
+            ]);
+        }
+    );
+}
+```
 
 Events
 ------
@@ -198,6 +228,6 @@ Event dispatched after a failed submission of the form.
 
 __________
 
-N'hésitez pas à me contacter si vous avez des questions ou des idées d'évolution. Enjoy !
+Do not hesitate to contact me if you have any questions or ideas for development. Enjoy!
 
 Eric BATARSON - [Digivia](http://www.digivia.fr)
