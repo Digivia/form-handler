@@ -1,10 +1,15 @@
-# Symfony form handler bundle
+# Symfony form handler bundle V2
 
 If you want to separate the logic carried out during the submission 
 of a form from the processing of the request carried out in the controller, this bundle is for you :)
 
 
 Thus, the controller only does its job: to receive a request and send back a response.
+
+Requirements :
+=============
+
+Need to use php8 and Symfony 5.4 / 6
 
 Installation
 ============
@@ -62,60 +67,77 @@ class AppKernel extends Kernel
 Configuration
 -------------
 
-First, you need to define your handler in `services.yaml` with this tag `digivia.handler` :
-```yaml
-services:
-    # ...
-    App\Handler\MyHandler:
-        tags:
-            - { name: digivia.handler }
-```
+:new:
 
-Thanks to Symfony autowiring, in case you have multiple handlers, you can define in one time all your handlers :
-```yaml
-services:
-    # ...
-    App\Handler\:
-        resource: '../src/Handler'
-        tags:
-            - { name: digivia.handler }
-```
+**Thanks to Symfony autoconfigure, no need to configure tags or nothing else**
 
 Usage
 ------
 
-Create your form, and add handler for this form :
+Create your form, it must implement **Digivia\FormHandler\Contract\Form\FormWithHandlerInterface**
+
+Then, you can provide your handler class name in static method **getHandlerClassName**
+
+```php
+use Digivia\FormHandler\Contract\Form\FormWithHandlerInterface;
+use App\FormHandler\TestFormHandler;
+
+/**
+ * Class FormTestType
+ * @package Digivia\Tests\HandlerFactory\TestSet\Form
+ */
+class FormTestType extends AbstractType implements FormWithHandlerInterface
+{
+    public static function getHandlerClassName(): string
+    {
+        // Here add your form handler
+        return TestFormHandler::class;
+    }
+    
+    /**
+     * @inheritdoc
+     */
+    public function buildForm(FormBuilderInterface $builder, array $options)
+    {
+        // here add your form field - see Symfony doc
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function configureOptions(OptionsResolver $resolver)
+    {
+        // Form configuration - see Symfony doc
+    }
+}
+```
+Create your form handler :
 
 ```php
 <?php
-namespace App\Handler\Test;
+namespace App\FormHandler\TestFormHandler;
 
 use App\Form\MyFormType;
 use Digivia\FormHandler\Handler\AbstractHandler;
 
-class TestHandler extends AbstractHandler
+class TestFormHandler extends AbstractHandler
 {
     protected function process($data, array $options): void
     {
         // your business logic in case of successful form submitting
         // ie : Doctrine persisting, messenger, mail...
     }
-
-    protected function provideFormTypeClassName(): string
-    {
-        // Your form class
-        return MyFormType::class;
-    }
 }
 ```
+
 
 In your controller, call the form handler factory :
 
 ```php
 public function edit(HandlerFactoryInterface $factory, Request $request, Post $post) : Response
 {
-    // Instanciate form handler
-    $handler = $factory->createHandler(TestHandler::class);
+    // Instanciate form handler and gives him your form type class name
+    $handler = $factory->createFormWithHandler(FormTestType::class);
     // Give data to work with and options to form / handler
     $handler->setData($post); // Optionally, set entity to work with to the form
     // Return Response after treatment    
@@ -142,7 +164,7 @@ You can give to your form some options and to your handler "process" method extr
 ```php
 
 // Instanciate form handler
-$handler = $factory->createHandler(TestHandler::class);
+$handler = $factory->createFormWithHandler(FormTestType::class);
 // Give data to work with and options to form / handler
 $handler->setFormOptions(['validation_groups' => false]); // Optionally, add form type options if you need
 // will be sent to $options in FormType :
@@ -150,7 +172,7 @@ FormFactory::create(string $type = 'Symfony\Component\Form\Extension\Core\Type\F
 
 
 // Process extra parameters is fourth parameter
-$handler = $factory->createHandler(TestHandler::class);
+$handler = $factory->createFormWithHandler(FormTestType::class);
 // Give data to work with and options to form / handler
 $handler->setExtraParams(['form_creation' => true]); // Optionally, add form type options if you need
 // will be sent to $options in this Form Handler method : 
@@ -173,7 +195,7 @@ So you can use this bundle with Turbo like this - see : [https://github.com/symf
 public function edit(HandlerFactoryInterface $factory, Request $request, Post $post) : Response
 {
     // Instanciate form handler
-    $handler = $factory->createHandler(TestHandler::class);
+    $handler = $factory->createFormWithHandler(FormTestType::class);
     // Give data to work with and options to form / handler
     $handler->setData($post); // Optionally, set entity to work with to the form
     // Return Response after treatment    

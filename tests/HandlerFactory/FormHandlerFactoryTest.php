@@ -5,12 +5,15 @@
 
 namespace Digivia\FormHandler\Tests\HandlerFactory;
 
+use Digivia\FormHandler\Contract\Handler\HandlerInterface;
+use Digivia\FormHandler\Exception\FormNotDefinedException;
+use Digivia\FormHandler\Exception\FormTypeNotFoundException;
 use Digivia\FormHandler\Exception\HandlerNotFoundException;
 use Digivia\FormHandler\Handler\AbstractHandler;
-use Digivia\FormHandler\Handler\HandlerInterface;
 use Digivia\FormHandler\HandlerFactory\HandlerFactory;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
+use Symfony\Component\Form\FormInterface;
 
 /**
  * Class FormHandlerFactoryTest
@@ -27,7 +30,7 @@ class FormHandlerFactoryTest extends TestCase
         $container->method('get')
             ->willReturn($handler);
         $container->method('has')
-            ->willReturn($handler);
+            ->willReturn(true);
         $this->assertInstanceOf(ContainerInterface::class, $container);
 
         $factory = new HandlerFactory($container);
@@ -40,5 +43,20 @@ class FormHandlerFactoryTest extends TestCase
         $this->expectException(HandlerNotFoundException::class);
         $factory = new HandlerFactory($container);
         $factory->createHandler('stuff');
+    }
+
+    public function testCreateFormWithNotExistsFormClassName()
+    {
+        $container = $this->createMock(ContainerInterface::class);
+        $factory = new HandlerFactory($container);
+        $this->expectException(FormTypeNotFoundException::class);
+        $factory->createFormWithHandler('stuff');
+    }
+    public function testCreateFormWithNotImplementsHandlerFormClassName()
+    {
+        $container = $this->createMock(ContainerInterface::class);
+        $factory = new HandlerFactory($container);
+        $this->expectException(FormNotDefinedException::class);
+        $factory->createFormWithHandler(FormInterface::class);
     }
 }

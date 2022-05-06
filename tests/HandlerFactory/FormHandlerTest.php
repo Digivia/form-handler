@@ -5,17 +5,14 @@
 
 namespace Digivia\FormHandler\Tests\HandlerFactory;
 
+use Digivia\FormHandler\Contract\Handler\HandlerInterface;
 use Digivia\FormHandler\Exception\CallbackMustReturnHttpResponseException;
 use Digivia\FormHandler\Exception\FormNotDefinedException;
-use Digivia\FormHandler\Exception\FormTypeNotFoundException;
 use Digivia\FormHandler\Handler\AbstractHandler;
-use Digivia\FormHandler\Handler\HandlerInterface;
 use Digivia\FormHandler\Tests\HandlerFactory\TestSet\Form\FormTestType;
 use Digivia\FormHandler\Tests\HandlerFactory\TestSet\Model\TestEntity;
 use PHPUnit\Framework\TestCase;
-use stdClass;
 use Symfony\Component\EventDispatcher\EventDispatcher;
-use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\HttpFoundation\HttpFoundationExtension;
 use Symfony\Component\Form\Extension\Validator\ValidatorExtension;
 use Symfony\Component\Form\FormInterface;
@@ -49,33 +46,6 @@ class FormHandlerTest extends TestCase
     {
         $handler = $this->createMock(AbstractHandler::class);
         $this->assertInstanceOf(HandlerInterface::class, $handler);
-    }
-
-    public function testFormClassNameFailClassNotExists()
-    {
-        $this->handler
-            ->method('provideFormTypeClassName')
-            ->willReturn('BadFormType');
-        $this->expectException(FormTypeNotFoundException::class);
-        $this->handler->getFormClassName();
-    }
-
-    public function testFormClassNameFailNonFormType()
-    {
-        $mockedFormClass = get_class($this->createMock(stdClass::class));
-        $this->handler
-            ->method('provideFormTypeClassName')
-            ->willReturn($mockedFormClass);
-        $this->assertEquals($mockedFormClass, $this->handler->getFormClassName());
-    }
-
-    public function testFormClassNameCheckSuccess()
-    {
-        $mockedFormClass = get_class($this->createMock(AbstractType::class));
-        $this->handler
-            ->method('provideFormTypeClassName')
-            ->willReturn($mockedFormClass);
-        $this->assertEquals($mockedFormClass, $this->handler->getFormClassName());
     }
 
     public function testCreateForm()
@@ -181,9 +151,7 @@ class FormHandlerTest extends TestCase
 
         $this->handler->setFormFactory($factory);
         $this->handler->setEventDispatcher(new EventDispatcher());
-        $this->handler
-            ->method('provideFormTypeClassName')
-            ->willReturn(FormTestType::class);
+        $this->handler->setFormFCQN(FormTestType::class);
         $request = $request ?? Request::createFromGlobals();
         $this->handler->createForm($request, new TestEntity());
     }

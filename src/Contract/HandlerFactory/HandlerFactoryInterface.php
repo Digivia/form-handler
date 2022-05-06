@@ -5,9 +5,9 @@
 
 declare(strict_types=1);
 
-namespace Digivia\FormHandler\HandlerFactory;
+namespace Digivia\FormHandler\Contract\HandlerFactory;
 
-use Digivia\FormHandler\Handler\HandlerInterface;
+use Digivia\FormHandler\Contract\Handler\HandlerInterface;
 
 /**
  * Interface HandlerFactoryInterface
@@ -15,5 +15,6 @@ use Digivia\FormHandler\Handler\HandlerInterface;
  */
 interface HandlerFactoryInterface
 {
+    public function createFormWithHandler(string $formClassName, mixed $data = null, array $options = []): HandlerInterface;
     public function createHandler(string $handler): HandlerInterface;
 }

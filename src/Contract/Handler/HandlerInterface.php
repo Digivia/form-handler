@@ -3,7 +3,7 @@
  * @author Eric BATARSON <eric.batarson@digivia.fr>
  */
 
-namespace Digivia\FormHandler\Handler;
+namespace Digivia\FormHandler\Contract\Handler;
 
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Form\FormFactoryInterface;
@@ -19,16 +19,11 @@ use Symfony\Component\HttpFoundation\Response;
 interface HandlerInterface
 {
     /**
-     * Symfony Form Factory service
-     * @param FormFactoryInterface $formFactory
+     * Process form after submit and valid
+     * @param $data
+     * @param array $options
      */
-    public function setFormFactory(FormFactoryInterface $formFactory): void;
-
-    /**
-     * Symfony Event Dispatcher service
-     * @param EventDispatcher $eventDispatcher
-     */
-    public function setEventDispatcher(EventDispatcher $eventDispatcher): void;
+    public function process($data, array $options): void;
 
     /**
      * Creates the form from Form Factory
@@ -49,16 +44,17 @@ interface HandlerInterface
     public function handle(Request $request, callable $onSuccess, callable $render): Response;
 
     /**
+     * Set initial Form Type data. ie : entity to work with
+     * @param $data
+     * @return HandlerInterface
+     */
+    public function setData($data): self;
+
+    /**
      * Helper : create form view
      * @return FormView
      */
     public function createView(): FormView;
-
-    /**
-     * Get concrete Form Type class
-     * @return string
-     */
-    public function getFormClassName(): string;
 
     /**
      * Getter for the form
@@ -69,21 +65,27 @@ interface HandlerInterface
     /**
      * Add options to Form Type
      * @param array $formOptions
-     * @return $this
+     * @return HandlerInterface
      */
     public function setFormOptions(array $formOptions): self;
 
     /**
      * Add extra parameters for process method
      * @param array $extraParams
-     * @return $this
+     * @return HandlerInterface
      */
     public function setExtraParams(array $extraParams): self;
 
+
     /**
-     * Set initial Form Type data. ie : entity to work with
-     * @param $data
-     * @return $this
+     * Symfony Form Factory service
+     * @param FormFactoryInterface $formFactory
      */
-    public function setData($data): self;
+    public function setFormFactory(FormFactoryInterface $formFactory): void;
+
+    /**
+     * Symfony Event Dispatcher service
+     * @param EventDispatcher $eventDispatcher
+     */
+    public function setEventDispatcher(EventDispatcher $eventDispatcher): void;
 }

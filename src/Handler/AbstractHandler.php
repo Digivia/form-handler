@@ -7,15 +7,12 @@ declare(strict_types=1);
 
 namespace Digivia\FormHandler\Handler;
 
+use Digivia\FormHandler\Contract\Handler\HandlerInterface;
 use Digivia\FormHandler\Event\FormHandlerEvent;
 use Digivia\FormHandler\Event\FormHandlerEvents;
 use Digivia\FormHandler\Exception\CallbackMustReturnHttpResponseException;
 use Digivia\FormHandler\Exception\FormNotDefinedException;
-use Digivia\FormHandler\Exception\FormTypeNotFoundException;
-use ReflectionClass;
-use ReflectionException;
 use Symfony\Component\EventDispatcher\EventDispatcher;
-use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\Form\FormView;
@@ -34,94 +31,10 @@ abstract class AbstractHandler implements HandlerInterface
     private FormFactoryInterface $formFactory;
     private ?FormInterface $form = null;
     private EventDispatcher $eventDispatcher;
+    private ?string $formFCQN = null;
     private array $formOptions = [];
     private array $extraParams = [];
     private $data;
-
-    /**
-     * Process a treatment if form is valid
-    * @param mixed|null $data
-    * @param array $options
-    */
-    abstract protected function process($data, array $options): void;
-
-    /**
-     * Provide a correct Symfony FormType in Handler
-     * @return string
-     */
-    abstract protected function provideFormTypeClassName(): string;
-
-    public function setFormFactory(FormFactoryInterface $formFactory): void
-    {
-        $this->formFactory = $formFactory;
-    }
-
-    public function setEventDispatcher(EventDispatcher $eventDispatcher): void
-    {
-        $this->eventDispatcher = $eventDispatcher;
-    }
-
-    /**
-     * @return string
-     * @throws FormTypeNotFoundException
-     */
-    public function getFormClassName(): string
-    {
-        $formType = $this->provideFormTypeClassName();
-        try {
-            $r = new ReflectionClass($formType);
-        } catch (ReflectionException $e) {
-            throw new FormTypeNotFoundException(
-                sprintf(
-                    "Non existing Form Type defined : « %s ». 
-                    Have you provide correct value in « provideFormTypeClassName » method of your handler ?",
-                    $formType
-                )
-            );
-        }
-        if (!$r->getParentClass()->name === AbstractType::class) {
-            throw new FormTypeNotFoundException(
-                sprintf(
-                    "Symfony form type does not exists. Have your extends %s from AbstractType ?",
-                    $formType
-                )
-            );
-        }
-
-        return $formType;
-    }
-
-    /**
-     * Use Symfony Form component to create the form object
-     * @param Request|null $request
-     * @param null $data
-     * @param array $options
-     * @return AbstractHandler
-     * @throws FormTypeNotFoundException
-     */
-    public function createForm(Request $request = null, $data = null, array $options = []): self
-    {
-        $form = $this->formFactory->create(
-            $this->getFormClassName(),
-            $data,
-            $options
-        );
-        if ($request instanceof Request) {
-            $form->handleRequest($request);
-        }
-        $this->setForm($form);
-        return $this;
-    }
-
-    public function setForm(FormInterface $form)
-    {
-        $this->form = $form;
-    }
-
-    public function getForm(): ?FormInterface
-    {
-        return $this->form;
-    }
 
     /**
      * @param Request $request
@@ -129,7 +42,7 @@ abstract class AbstractHandler implements HandlerInterface
      * @param callable $render
      * @return Response
      * @throws CallbackMustReturnHttpResponseException
-     * @throws FormTypeNotFoundException
+     * @throws FormNotDefinedException
      */
     public function handle(Request $request, callable $onSuccess, callable $render): Response
     {
@@ -180,6 +93,37 @@ abstract class AbstractHandler implements HandlerInterface
     }
 
     /**
+     * Use Symfony Form component to create the form object
+     * @param Request|null $request
+     * @param null $data
+     * @param array $options
+     * @return AbstractHandler
+     */
+    public function createForm(?Request $request = null, $data = null, array $options = []): self
+    {
+        $form = $this->formFactory->create(
+            $this->formFCQN,
+            $data,
+            $options
+        );
+        if ($request instanceof Request) {
+            $form->handleRequest($request);
+        }
+        $this->setForm($form);
+        return $this;
+    }
+
+    public function setForm(FormInterface $form)
+    {
+        $this->form = $form;
+    }
+
+    public function getForm(): ?FormInterface
+    {
+        return $this->form;
+    }
+
+    /**
      * @return FormView
      * @throws FormNotDefinedException
      */
@@ -207,5 +151,20 @@ abstract class AbstractHandler implements HandlerInterface
     {
         $this->data = $data;
         return $this;
+    }
+
+    public function setFormFactory(FormFactoryInterface $formFactory): void
+    {
+        $this->formFactory = $formFactory;
+    }
+
+    public function setEventDispatcher(EventDispatcher $eventDispatcher): void
+    {
+        $this->eventDispatcher = $eventDispatcher;
+    }
+
+    public function setFormFCQN(string $formFCQN)
+    {
+        $this->formFCQN = $formFCQN;
     }
 }

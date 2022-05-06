@@ -28,7 +28,10 @@ final class FormHandlerCompilerPass implements CompilerPassInterface
         $serviceMap = [];
 
         // Get all handler tagged with "app.handler" = created handler by developer
-        $taggedServices = $container->findTaggedServiceIds(FormHandlerServiceTag::FORM_HANDLER_SERVICE_TAG, true);
+        $taggedServices = $container->findTaggedServiceIds(
+            FormHandlerServiceTag::FORM_HANDLER_SERVICE_TAG,
+            true
+        );
 
         $formFactoryDefinition = $container->getDefinition('form.factory');
         $eventDispatcherDefinition = $container->getDefinition('event_dispatcher');
@@ -42,7 +45,8 @@ final class FormHandlerCompilerPass implements CompilerPassInterface
             $serviceMap[$container->getDefinition($serviceId)->getClass()] = new Reference($serviceId);
         }
 
-        // Add to Handler Factory constructor all handler defined - @see Digivia\FormHandler\HandlerFactory\HandlerFactory::__construct
+        // Add to Handler Factory constructor all handler defined
+        // @see Digivia\FormHandler\HandlerFactory\HandlerFactory::__construct
         $formHandlerDefinition->setArgument(0, ServiceLocatorTagPass::register($container, $serviceMap));
     }
 }
